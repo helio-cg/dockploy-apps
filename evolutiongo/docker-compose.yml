@@ -1,0 +1,53 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: evolutiongo-postgres
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: evogo_auth
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - /home/apps/evolutiongo/postgres:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  evolution-go:
+    image: evoapicloud/evolution-go:latest
+    container_name: evolutiongo-app
+    restart: unless-stopped
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    ports:
+      - "7998:7998"
+
+    environment:
+      SERVER_PORT: 7998
+      CLIENT_NAME: evolution
+      GLOBAL_API_KEY: sssssssssssss
+
+      POSTGRES_AUTH_DB: postgresql://postgres:password@postgres:5432/evogo_auth?sslmode=disable
+      POSTGRES_USERS_DB: postgresql://postgres:password@postgres:5432/evogo_users?sslmode=disable
+
+      DATABASE_SAVE_MESSAGES: "false"
+      WADEBUG: INFO
+      LOGTYPE: console
+
+    volumes:
+      - /home/apps/evolutiongo/app:/evolution/store
+
+networks:
+  default:
+    name: evolutiongo-network
